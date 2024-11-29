@@ -39,7 +39,7 @@ app.post('/api/customers', (req, res) => {
     }
 })
 
-
+// Route for Retrieving customer by ID
 app.get('/api/customers/:id', (req, res) => {
 
     try {
@@ -52,7 +52,27 @@ app.get('/api/customers/:id', (req, res) => {
 
         res.status(200).json(customer);
     } catch (error) {
+        console.error('Failed to Retrieve Customers', error);
+    }
+})
 
+
+app.put('/api/customers/:id', (req, res) => {
+
+    try {
+        const customerId = parseInt(req.params.id);
+        const { name, email } = req.body;
+        const customer = customers.find(c => c.id === customerId);
+
+        if (!customer) {
+            return res.status(404).json({ message: 'Customer not found!'});
+        }
+
+        customer.name = name || customer.name;
+        customer.email = email || customer.email;
+    } catch (error) {
+        console.error('Failed to Update Customer:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 })
 
