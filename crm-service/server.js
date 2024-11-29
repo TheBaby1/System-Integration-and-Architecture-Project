@@ -22,6 +22,7 @@ app.post('/api/customers', (req, res) => {
         const newCustomer = { id: Date.now(), name, email };
         res.status(201).json(newCustomer);
     } catch (error) {
+        console.log('Failed to get cusomers:', error);
         res.status(500).json( 'Internal Server Error' );
     }
 })

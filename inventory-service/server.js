@@ -21,11 +21,12 @@ app.put('/api/inventory/:id', (req, res) => {
         const { stock } = req.body;
         res.status(200).json({ id, stock });
     } catch (error) {
+        console.error('Failed to create inventory:', error);
         res.status(500).json( 'Internal Service Error' );
     }
 })
 
 
 app.listen(3002, () => {
-    console.log('Inventory Service runningon port 3002');
+    console.log('Inventory Service running on port 3002');
 })

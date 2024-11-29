@@ -7,10 +7,21 @@ app.use(express.json());
 
 
 app.post('/api/tickets', (req, res) => {
-    const { customerId, issue } = req.body;
-    const newTicket = { id: Date.now(), customerId, issue, status: 'open' };
-    res.status(201).json(newTicket);
+    try {
+        const { customerId, issue } = req.body;
+
+        if (!customerId || !issue) {
+            return res.status(400).json({ error: 'customerId and issue are required' });
+        }
+        const newTicket = { id: Date.now(), customerId, issue, status: 'open' };
+        
+        res.status(201).json(newTicket);
+    } catch (error) {
+        console.error('Error creating ticket:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
+
 
 
 app.get('/api/tickets/:customerId', (req, res) => {
@@ -22,7 +33,8 @@ app.get('/api/tickets/:customerId', (req, res) => {
           { ticketId: 1, customerId, issue: 'Issue with order', status: 'open' },
         ]);
     } catch (error) {
-        res.status(500).json( 'Internal Server Error' );
+        console.error('Error getting ticket:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
     
 });
