@@ -7,7 +7,7 @@ app.use(express.json());
 
 let customers = [];
 
-
+// Route for Retrieving all customers
 app.get('/api/customers', (req, res) => {
 
     try {
@@ -19,7 +19,7 @@ app.get('/api/customers', (req, res) => {
     
 })
 
-// Route for Retrieving all customers
+// Route for Creating a Customer
 app.post('/api/customers', (req, res) => {
 
     try {
@@ -56,7 +56,7 @@ app.get('/api/customers/:id', (req, res) => {
     }
 })
 
-
+// Route for Updating Customers by ID
 app.put('/api/customers/:id', (req, res) => {
 
     try {
@@ -68,10 +68,30 @@ app.put('/api/customers/:id', (req, res) => {
             return res.status(404).json({ message: 'Customer not found!'});
         }
 
-        customer.name = name || customer.name;
-        customer.email = email || customer.email;
+        customer.name = name;
+        customer.email = email;
+        res.status(200).json({ message: 'Customer Successfully Updated' });
     } catch (error) {
         console.error('Failed to Update Customer:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+})
+
+// Route for Deleting a Customer by ID
+app.delete('/api/customers/:id', (req, res) => {
+
+    try {
+        const customerId = parseInt(req.params.id);
+        const index = customers.findIndex(c => c.id === customerId);
+
+        if (index === -1) {
+            return res.status(404).json({ error: 'Customer not found' });
+        }
+
+        customers.splice(index, 1);
+        res.status(200).json({ message: 'Customer Successfully Deleted' });
+    } catch (error) {
+        console.error('Failed to Delete Customer:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 })
