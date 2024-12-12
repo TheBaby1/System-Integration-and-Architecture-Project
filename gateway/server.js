@@ -9,21 +9,29 @@ app.use(express.json());
 
 
 app.get('/api/customers', async (req, res) => {
-  const response = await axios.get('http://localhost:3001/api/customers');
-  res.status(200).json(response.data);
+    const response = await axios.get('http://localhost:3001/api/customers');
+    res.status(200).json(response.data);
 });
 
 
 app.get('/api/inventory', async (req, res) => {
-  const response = await axios.get('http://localhost:3002/api/inventory');
-  res.status(200).json(response.data);
+    const response = await axios.get('http://localhost:3002/api/inventory');
+    res.status(200).json(response.data);
 });
 
 
-app.get('/api/tickets/:customerId', async (req, res) => {
-  const { customerId } = req.params;
-  const response = await axios.get(`http://localhost:3003/api/tickets/${customerId}`);
-  res.status(200).json(response.data);
+app.get('/api/tickets/customer/:customerId', async (req, res) => {
+
+    try {
+      const { customerId } = req.params;
+      console.log(`Fetching tickets for customerId: ${customerId}`);
+
+      const response = await axios.get(`http://localhost:3003/api/tickets/${customerId}`);
+      res.status(200).json(response.data);
+  } catch (error) {
+      console.error('Failed to Retrieve Tickets from Support-Service', error);
+      res.status(error.response?.status || 500).json({ error: 'Internal Server Error' });
+  }
 });
 
 
