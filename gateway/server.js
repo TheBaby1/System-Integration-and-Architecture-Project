@@ -26,7 +26,7 @@ app.get('/api/tickets/customer/:customerId', async (req, res) => {
       const { customerId } = req.params;
       console.log(`Fetching tickets for customerId: ${customerId}`);
 
-      const response = await axios.get(`http://localhost:3003/api/tickets/${customerId}`);
+      const response = await axios.get(`http://localhost:3003/api/tickets/customer/${customerId}`);
       res.status(200).json(response.data);
   } catch (error) {
       console.error('Failed to Retrieve Tickets from Support-Service', error);
