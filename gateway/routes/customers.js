@@ -1,53 +1,75 @@
 const express = require('express');
 const axios = require('axios');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 
-// GET request to retrieve Customers
-router.get('/', async (req, res) => {
-    const response = await axios.get('http://localhost:3001/api/customers');
-    res.status(200).json(response.data);
+const JWT_SECRET = 'your_secret_key';  
+const crmServiceURL = 'http://localhost:3001/api/customers'; 
+
+//REGISTER
+router.post('/register', async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+
+        if (!name || !email || !password) {
+            return res.status(400).json({ message: 'Please provide name, email, and password' });
+        }
+
+        const response = await axios.post(`${crmServiceURL}/register`, { name, email, password });
+        res.status(response.status).json(response.data);
+    } catch (error) {
+        console.error('Error in gateway:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
-// POST request to Create a new customer
-router.post('/', async (req, res) => {
-
+//LOGIN
+router.post('/login', async (req, res) => {
     try {
-        const newCustomer = req.body;
-        const response = await axios.post('http://localhost:3001/api/customers', newCustomer);
-        res.status(200).json(response.data);
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Please provide email and password' });
+        }
+
+        const response = await axios.post(`${crmServiceURL}/login`, { email, password });
+
+        if (response.status === 200) {
+            const token = jwt.sign({ id: response.data.customer.id, role: response.data.customer.role }, JWT_SECRET, { expiresIn: '1h' });
+            res.status(200).json({ message: 'Login successful', token, customer: response.data.customer });
+        } else {
+            res.status(response.status).json(response.data);
+        }
     } catch (error) {
-        console.error('Failed to Create Customer Account', error);
+        console.error('Login failed:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
-})
+});
 
-// PUT request to Update a Customer by ID
-router.put('/:id', async (req, res) => {
-
-    try {
-        const customerId = req.params.id;
-        const updatedCustomerData = req.body;
-
-        const response = await axios.put(`http://localhost:3001/api/customers/${customerId}`, updatedCustomerData);
-        res.status(200).json(response.data);
-    } catch (error) {
-        console.error('Failed to Update Customer', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+//ADMIN ONLY
+router.get('/admin', authenticateToken, (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Access denied: Admins only' });
     }
-})
+    res.status(200).json({ message: 'Welcome Admin!' });
+});
 
-// DELETE request to Delete a Customer by ID
-router.delete('/:id', async (req, res) => {
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Extract token from 'Bearer <token>'
 
-    try {
-        const customerId = req.params.id;
-        const response = await axios.delete(`http://localhost:3001/api/customers/${customerId}`);
-
-        res.status(200).json(response.data);
-    } catch (error) {
-        console.error('Failed to Delete Customer', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+    if (!token) {
+        return res.status(401).json({ message: 'Access denied: No token provided' });
     }
-})
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ message: 'Invalid token' });
+        }
+        req.user = user; 
+        next();
+    });
+}
 
 module.exports = router;

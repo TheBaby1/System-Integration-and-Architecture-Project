@@ -1,10 +1,39 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 
-let products = [];
+const JWT_SECRET = 'your_secret_key'; 
 
+let products = [];
+let nextProductId = 1;  
+
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; 
+
+    if (!token) {
+        return res.status(401).json({ message: 'Access denied: No token provided' });
+    }
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ message: 'Invalid token' });
+        }
+        req.user = user; 
+        next();
+    });
+}
+
+// Middleware to authorize only Admin users
+function authorizeAdmin(req, res, next) {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Access denied: Admins only' });
+    }
+    next();
+}
+
+// Route for fetching products (no authentication required)
 router.get('/', (req, res) => {
-    
     try {
         res.status(200).json(products);
     } catch (error) {
@@ -13,18 +42,25 @@ router.get('/', (req, res) => {
     }
 })
 
-// Route for Creating Products
-router.post('/', (req, res) => {
-
+// Route for Creating Products (requires authentication and admin role)
+router.post('/', authenticateToken, authorizeAdmin, (req, res) => {
     try {
         const { name, price, quantity } = req.body;
-        const newProduct = { id: Date.now(), name, price, quantity };
 
-        if (!name && !price && !quantity) {
-            return res.status(400).json({ message: 'Complete All Fields! (Name, Price, Quantity' });
+        const existingProduct = products.find(p => p.name.toLowerCase() === name.toLowerCase());
+
+        if (existingProduct) {
+            return res.status(400).json({ message: 'Product name already exists!' });
         }
 
+        if (!name || !price || !quantity) {
+            return res.status(400).json({ message: 'Complete All Fields! (Name, Price, Quantity)' });
+        }
+
+        const newProduct = { id: nextProductId, name, price, quantity };
         products.push(newProduct);
+
+        nextProductId++; // Increment the ID counter for the next product
 
         res.status(201).json({ message: 'Successfully Added New Product!' });
     } catch (error) {
@@ -33,21 +69,34 @@ router.post('/', (req, res) => {
     }
 })
 
-// Route for Updating Products by ID
-router.put('/:id', (req, res) => {
-
+// Route for Updating Products by ID (requires authentication and admin role)
+router.put('/:id', authenticateToken, authorizeAdmin, (req, res) => {
     try {
         const productId = parseInt(req.params.id);
         const { name, price, quantity } = req.body;
+
         const product = products.find(p => p.id === productId);
 
         if (!product) {
-            return res.status(404).json({ message: 'Prodcut not Found!' });
+            return res.status(404).json({ message: 'Product not Found!' });
         }
 
-        product.name = name;
-        product.price = price;
-        product.quantity = quantity;
+        if (name) {
+            const existingProduct = products.find(p => p.name.toLowerCase() === name.toLowerCase() && p.id !== productId);
+            if (existingProduct) {
+                return res.status(400).json({ message: 'Product name already exists!' });
+            }
+            product.name = name;
+        }
+
+        if (price) {
+            product.price = price;
+        }
+
+        if (quantity) {
+            product.quantity = quantity;
+        }
+
         res.status(200).json({ message: 'Product Successfully Updated' });
     } catch (error) {
         console.error('Failed to Update Product', error);
@@ -55,9 +104,8 @@ router.put('/:id', (req, res) => {
     }
 })
 
-// Route for Deleting Product by ID
-router.delete('/:id', (req, res) => {
-
+// Route for Deleting Product by ID (requires authentication and admin role)
+router.delete('/:id', authenticateToken, authorizeAdmin, (req, res) => {
     try {
         const productId = parseInt(req.params.id);
         const index = products.findIndex(p => p.id === productId);
