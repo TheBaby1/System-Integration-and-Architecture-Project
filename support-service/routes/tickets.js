@@ -2,22 +2,29 @@ const express = require('express');
 const router = express.Router();
 
 let tickets = [];
-let ticketIdCounter = 1; 
+let ticketIdCounter = 1;
 
-
+// Create Ticket
 router.post('/', (req, res) => {
-    const { customerId, issue } = req.body; 
+    const { 'user-role': role, 'user-id': userId } = req.headers;  
+    const { issue, customerId } = req.body;  
 
-    if (!issue) {
-        return res.status(400).json({ error: 'Issue is required.' });
+    console.log('Received Headers:', req.headers);
+
+    if (role !== 'customer') {
+        return res.status(403).json({ error: 'Only customers can create tickets.' });
     }
 
-    if (!customerId) {
-        return res.status(400).json({ error: 'CustomerId is missing in the request.' });
+    if (!issue || !customerId) {
+        return res.status(400).json({ error: 'Issue and customerId are required.' });
+    }
+
+    if (parseInt(customerId, 10) !== parseInt(userId, 10)) {
+        return res.status(403).json({ error: 'You can only create tickets for your own account.' });
     }
 
     const newTicket = {
-        id: ticketIdCounter++,
+        id: ticketIdCounter++,  
         customerId,
         issue,
         status: 'open',
@@ -27,98 +34,77 @@ router.post('/', (req, res) => {
     res.status(201).json({ message: 'Ticket created successfully', ticket: newTicket });
 });
 
+
+
+// Get All Tickets or User's Tickets
 router.get('/', (req, res) => {
-    const role = req.headers['user-role'];  
-    const userId = req.headers['user-id'];  
+    const { 'user-role': role, 'user-id': userId } = req.headers;
 
     if (!role || !userId) {
-        return res.status(400).json({ error: 'User role or ID missing in the request headers' });
+        return res.status(400).json({ error: 'User role or ID is missing in the request headers.' });
     }
 
     if (role === 'admin') {
-        return res.status(200).json({
-            message: 'All tickets fetched',
-            tickets: tickets 
-        });
+        return res.status(200).json({ message: 'All tickets fetched', tickets });
     }
 
     const userTickets = tickets.filter(ticket => ticket.customerId === parseInt(userId, 10));
-
-    if (!userTickets.length) {
-        return res.status(404).json({ error: 'No tickets found.' });
-    }
-
-    res.status(200).json({
-        message: 'User tickets fetched',
-        tickets: userTickets
-    });
+    return res.status(200).json({ message: 'User tickets fetched', tickets: userTickets });
 });
 
-
-
-
+// CRM Service Code
 router.get('/:customerId', (req, res) => {
-    console.log("Received headers in microservice:", req.headers); 
-    const role = req.headers['user-role'];  
-    const { customerId } = req.params;  
+    const { 'user-role': role, 'user-id': userId } = req.headers;
+    const { customerId } = req.params;
 
-    if (!role) {
-        return res.status(400).json({ error: 'Role is missing from the headers.' });
+    if (!role || !userId) {
+        return res.status(400).json({ error: 'Role or User ID is missing in the request headers.' });
     }
 
-    if (role !== 'admin') {
-        return res.status(403).json({ error: 'Access denied. Admins only.' });
+    const parsedCustomerId = parseInt(customerId, 10);
+
+    if (role === 'admin') {
+        const customerTickets = tickets.filter(ticket => ticket.customerId === parsedCustomerId);
+        return res.status(200).json({ message: 'Customer tickets fetched', tickets: customerTickets });
     }
 
-    const customerTickets = tickets.filter(ticket => ticket.customerId === parseInt(customerId, 10));
-
-    if (!customerTickets.length) {
-        return res.status(404).json({ error: 'No tickets found for this customer.' });
+    if ((role === 'user' || role === 'customer') && parsedCustomerId === parseInt(userId, 10)) {
+        const userTickets = tickets.filter(ticket => ticket.customerId === parsedCustomerId);
+        return res.status(200).json({ message: 'Your tickets fetched', tickets: userTickets });
     }
 
-    res.status(200).json(customerTickets);
+    return res.status(403).json({ error: 'Access denied. You can only access your own tickets.' });
 });
+
+
 
 router.put('/:ticketId', (req, res) => {
-    const ticketId = parseInt(req.params.ticketId, 10); 
-    const { status } = req.body;  
-    const role = req.headers['user-role'];  
+    const { 'user-role': role, 'user-id': userId } = req.headers;
+    const { status } = req.body;
+    const ticketId = parseInt(req.params.ticketId, 10);
 
-    console.log("Role:", role);
-    console.log("Ticket ID:", ticketId);
-    console.log("Request Body:", req.body);
-    
+    if (!role || !status) {
+        return res.status(400).json({ error: 'Role and status are required.' });
+    }
+
     const ticket = tickets.find(t => t.id === ticketId);
 
     if (!ticket) {
         return res.status(404).json({ error: 'Ticket not found.' });
     }
 
-    if (!role) {
-        return res.status(400).json({ error: 'Role is missing in the request headers.' });
-    }
-
+    // If the user is an admin, allow them to update the status
     if (role === 'admin') {
-        if (status) {
-            ticket.status = status;  
-            return res.status(200).json({ message: 'Ticket status updated successfully', ticket });
-        } else {
-            return res.status(400).json({ error: 'Status is required for admin updates.' });
-        }
+        ticket.status = status;
+        return res.status(200).json({ message: 'Ticket updated successfully', ticket });
     }
 
-    return res.status(403).json({ error: 'Access denied. Only admins can update the status.' });
+    return res.status(403).json({ error: 'Access denied. Only admins can update ticket status.' });
 });
 
-
 router.delete('/:ticketId', (req, res) => {
-    const ticketId = parseInt(req.params.ticketId, 10); 
-    const role = req.headers['user-role'];
-    const userId = req.headers['user-id'];  
-
-    console.log("Role:", role);
-    console.log("Ticket ID:", ticketId);
-    console.log("User ID:", userId);
+    const { 'user-role': role, 'user-id': userId } = req.headers;
+    const ticketId = parseInt(req.params.ticketId, 10);  
 
     if (!role || !userId) {
         return res.status(400).json({ error: 'Role or User ID is missing in the request headers.' });
@@ -132,14 +118,9 @@ router.delete('/:ticketId', (req, res) => {
 
     const ticket = tickets[ticketIndex];
 
-    if (role === 'admin') {
+    if (role === 'admin' || (role === 'customer' && ticket.customerId === parseInt(userId, 10))) {
         tickets.splice(ticketIndex, 1);
         return res.status(200).json({ message: 'Ticket deleted successfully' });
-    }
-
-    if (role === 'user' && ticket.customerId === parseInt(userId, 10)) {
-        tickets.splice(ticketIndex, 1);
-        return res.status(200).json({ message: 'Your ticket has been deleted successfully.' });
     }
 
     return res.status(403).json({ error: 'You can only delete your own tickets.' });
