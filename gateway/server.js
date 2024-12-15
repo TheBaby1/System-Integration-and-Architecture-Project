@@ -60,6 +60,8 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const customerRoutes = require('./routes/customers');  // Gateway routes that are forwarded to CRM
+const ticketsRoutes = require('./routes/tickets');
+
 
 const app = express();
 
@@ -69,6 +71,7 @@ app.use(express.json());
 
 // Use the customer routes (this handles routes like /api/customers)
 app.use('/api/customers', customerRoutes);
+app.use('/api/tickets', ticketsRoutes);
 
 app.listen(3000, () => {
     console.log('API Gateway running on port 3000');

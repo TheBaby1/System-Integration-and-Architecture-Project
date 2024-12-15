@@ -1,142 +1,145 @@
 const express = require('express');
 const router = express.Router();
 
-const tickets = [];
+let tickets = [];
+let ticketIdCounter = 1; // Ticket ID counter (will reset on service restart)
 
-// Route for Creating Support Tickets
+// Create a new ticket (customerId will be attached automatically by the gateway)
 router.post('/', (req, res) => {
+    const { customerId, issue } = req.body; // The body must contain the 'issue'
 
-    try {
-        const { customerId, issue } = req.body;
-        const newTicket = { id: Date.now(), customerId, issue, status: 'open' };
-
-        if (!customerId || !issue) {
-            return res.status(400).json({ error: 'customerId and issue are required' });
-        }
-        
-        tickets.push(newTicket);
-        res.status(200).json({ message: 'Successfully Created Ticket' });
-    } catch (error) {
-        console.error('Error creating ticket:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+    // Check if the issue is provided
+    if (!issue) {
+        return res.status(400).json({ error: 'Issue is required.' });
     }
+
+    // If customerId is missing, it's an internal issue (should be attached by the gateway)
+    if (!customerId) {
+        return res.status(400).json({ error: 'CustomerId is missing in the request.' });
+    }
+
+    const newTicket = {
+        id: ticketIdCounter++,
+        customerId,
+        issue,
+        status: 'open',
+    };
+
+    tickets.push(newTicket);
+    res.status(201).json({ message: 'Ticket created successfully', ticket: newTicket });
 });
 
-// Route for Retrieving all Tickets
 router.get('/', (req, res) => {
+    const role = req.headers['user-role'];  // Get user role from headers
+    const userId = req.headers['user-id'];  // Get user ID from headers
 
-    try {
-        res.status(200).json(tickets);
-    } catch (error) {
-        console.error('Failed to Retrieve Tickets', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+    if (!role || !userId) {
+        return res.status(400).json({ error: 'User role or ID missing in the request headers' });
     }
-})
 
-// Route for Retrieving Ticket by Customer ID
-router.get('/customer/:customerId', (req, res) => {
-
-    try {
-        const { customerId } = req.params;
-        const customerTickets = tickets.filter(t => t.customerId == customerId);
-
-        if (customerTickets.length === 0) {
-            return res.status(404).json({ error: 'No Ticket Found For This Customer' });
-        }
-
-        res.status(200).json(customerTickets);
-    } catch (error) {
-        console.error('Failed to Retrieve Ticket by Customer ID', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+    // If user role is admin, return all tickets
+    if (role === 'admin') {
+        return res.status(200).json({
+            message: 'All tickets fetched',
+            tickets: tickets  // Return the actual tickets
+        });
     }
+
+    // For regular users, filter tickets by customerId (userId)
+    const userTickets = tickets.filter(ticket => ticket.customerId === parseInt(userId, 10));
+
+    // If no tickets are found for the user, return 404
+    if (!userTickets.length) {
+        return res.status(404).json({ error: 'No tickets found.' });
+    }
+
+    // Return the filtered tickets for the user
+    res.status(200).json({
+        message: 'User tickets fetched',
+        tickets: userTickets
+    });
 });
 
-// Route for Retrieving Ticket by Ticket ID
-router.get('/:ticketId', (req, res) => {
 
-    try {
-        const { ticketId } = req.params;
-        const ticket = tickets.find(t => t.id === parseInt(ticketId));
 
-        if (!ticket) {
-            return res.status(404).json({ error: 'Ticket Not Found' });
-        }
 
-        res.status(200).json(ticket);
-    } catch (error) {
-        console.error('Failed to Retrieve Ticket by Ticket ID', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+router.get('/:customerId', (req, res) => {
+    console.log("Received headers in microservice:", req.headers);  // Log all headers
+    const role = req.headers['user-role'];  // Access 'user-role' header (case-insensitive)
+    const { customerId } = req.params;  // Extract customerId from URL
+
+    // Ensure the role is available
+    if (!role) {
+        return res.status(400).json({ error: 'Role is missing from the headers.' });
     }
-})
 
-// Route to Update Ticket Status by Ticket ID
-router.put('/:ticketId/status', (req, res) => {
-
-    try {
-        const { ticketId } = req.params;
-        const { status } = req.body;
-        const ticket = tickets.find(t => t.id === parseInt(ticketId));
-
-        if (!ticket) {
-            return res.status(404).json({ error: 'Ticket Not Found' });
-        }
-
-        if (!['open', 'in progress', 'resolved', 'closed'].includes(status)) {
-            return res.status(400).json({ error: 'Invalid status' });
-        }
-
-        ticket.status = status;
-        res.status(200).json({ message: 'Successfully Updated Ticket' });
-    } catch (error) {
-        console.error('Failed to Update Ticket Status', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+    // If the role is not admin, deny access
+    if (role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied. Admins only.' });
     }
-})
 
-// Route to Update a Ticket Issue or Status
+    // Admin can fetch the specific customer's tickets
+    const customerTickets = tickets.filter(ticket => ticket.customerId === parseInt(customerId, 10));
+
+    // If no tickets are found, return 404 error
+    if (!customerTickets.length) {
+        return res.status(404).json({ error: 'No tickets found for this customer.' });
+    }
+
+    // Return the tickets for the specific customer
+    res.status(200).json(customerTickets);
+});
+
+// Update a ticket
 router.put('/:ticketId', (req, res) => {
+    const ticketId = parseInt(req.params.ticketId, 10);  // Get the ticket ID from the URL
+    const { issue, status } = req.body;  // Get the issue and status from the request body
+    const role = req.headers['user-role'];  // Get the role from the request headers
+    const ticket = tickets.find(t => t.id === ticketId);  // Find the ticket by ID
 
-    try {
-        const { ticketId } = req.params;
-        const { issue, status } = req.body;
-        const ticket = tickets.find(t => t.id == parseInt(ticketId));
+    if (!ticket) {
+        return res.status(404).json({ error: 'Ticket not found.' });
+    }
 
-        if (!ticket) {
-            return res.status(404).json({ error: 'Ticket Not Found' });
-        }
-
-        if (status && ['open', 'in progress', 'resolved', 'closed'].includes(status)) {
+    // Check if the role is admin or user and process accordingly
+    if (role === 'admin') {
+        // Admin can update both status and issue
+        if (status) {
             ticket.status = status;
         }
-
         if (issue) {
             ticket.issue = issue;
         }
-
-        res.status(200).json({ message: 'Successfully Updated Ticket' });
-    } catch (error) {
-        console.error('Failed to Update the Ticket', error);
-        res.status(500).json({ error: 'Internal Server Error' });
+        return res.status(200).json({ message: 'Ticket updated successfully', ticket });
     }
-})
 
-// Route to Delete A Ticket by Ticket ID
-router.delete('/:ticketId', (req, res) => {
-
-    try {
-        const { ticketId } = req.params;
-        const index = tickets.findIndex(t => t.id === parseInt(ticketId));
-
-        if (index === -1) {
-            return res.status(404).json({ error: 'Ticket not Found' });
+    if (role === 'user') {
+        // User can only update the issue
+        if (issue) {
+            ticket.issue = issue;
+            return res.status(200).json({ message: 'Ticket issue updated successfully', ticket });
+        } else {
+            return res.status(400).json({ error: 'Issue is required for users.' });
         }
-
-        tickets.splice(index, 1);
-        res.status(200).json({ message: 'Successfully Deleted Ticket' });
-    } catch (error) {
-        console.error('Failed to Delete Ticket', error);
-        res.status(500).json({ error: 'Internal Server Error' });
     }
-})
+
+    // If role is neither admin nor user
+    return res.status(400).json({ error: 'Invalid role. Admin can update status and issue, users can only update the issue.' });
+});
+
+
+
+// Delete a ticket (based on ticketId)
+router.delete('/:ticketId', (req, res) => {
+    const ticketId = parseInt(req.params.ticketId, 10);
+    const index = tickets.findIndex(t => t.id === ticketId);
+
+    if (index === -1) {
+        return res.status(404).json({ error: 'Ticket not found.' });
+    }
+
+    tickets.splice(index, 1);
+    res.status(200).json({ message: 'Ticket deleted successfully' });
+});
 
 module.exports = router;
