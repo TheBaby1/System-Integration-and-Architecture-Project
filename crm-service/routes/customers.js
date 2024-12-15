@@ -73,9 +73,9 @@ router.post('/login', async (req, res) => {
         const customer = customers.find(c => c.email.toLowerCase().trim() === normalizedEmail);
 
         if (!customer) {
-            return res.status(401).json({
+            return res.status(404).json({
                 error: true,
-                message: 'Invalid email or password.',
+                message: 'User does not exist.',
             });
         }
 
@@ -103,6 +103,8 @@ router.post('/login', async (req, res) => {
         });
     }
 });
+
+
 
 // CRUD Routes for customers
 router.get('/', (req, res) => {

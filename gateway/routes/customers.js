@@ -54,35 +54,10 @@ router.post('/register', async (req, res) => {
     await forwardToCRMService(req, res, 'POST', '/register', req.body);
 });
 
-// Login route
 router.post('/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ message: 'Please provide email and password' });
-        }
-
-        const response = await axios.post(`${crmServiceURL}/login`, { email, password });
-
-        if (response.status === 200) {
-            const token = jwt.sign(
-                { id: response.data.customer.id, role: response.data.customer.role },
-                JWT_SECRET,
-                { expiresIn: '1h' }
-            );            
-            res.status(200).json({ message: 'Login successful', token, customer: response.data.customer });
-        } else {
-            res.status(response.status).json(response.data);
-        }
-    } catch (error) {
-        console.error('Login failed:', error);
-        res.status(500).json({
-            error: 'Login Failed',
-            message: 'An error occurred during the login process.',
-        });
-    }
+    await forwardToCRMService(req, res, 'POST', '/login', req.body);
 });
+
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
