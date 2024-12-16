@@ -2,6 +2,7 @@ const https = require('https');
 const express = require('express');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
 const JWT_SECRET = 'your_secret_key';
@@ -23,6 +24,13 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+
+// Rate limiter
+let limiter = rateLimit({
+    max: 5,
+    windowMs: 30 * 1000,
+    message: 'You have exceeded the maximum number of allowed requests. Please try again later.'
+});
 
 // Admin Authorization Middleware
 const authorizeAdmin = (req, res, next) => {
@@ -60,10 +68,10 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
 }
 
 // Routes
-router.get('/', (req, res) => forwardToCRMService(req, res, 'GET', '/'));
-router.get('/:productId', (req, res) => forwardToCRMService(req, res, 'GET', `/${req.params.productId}`));
-router.post('/', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body));
-router.put('/:id', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body));
-router.delete('/:id', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`));
+router.get('/', limiter, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
+router.get('/:productId', limiter, (req, res) => forwardToCRMService(req, res, 'GET', `/${req.params.productId}`));
+router.post('/', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body));
+router.put('/:id', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body));
+router.delete('/:id', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`));
 
 module.exports = router;

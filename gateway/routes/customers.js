@@ -2,6 +2,7 @@ const https = require('https');
 const express = require('express');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
 const JWT_SECRET = 'your_secret_key';
@@ -76,6 +77,13 @@ function authenticateToken(req, res, next) {
     });
 }
 
+// Rate limiter
+let limiter = rateLimit({
+    max: 5,
+    windowMs: 30 * 1000,
+    message: 'You have exceeded the maximum number of allowed requests. Please try again later.'
+});
+
 // Admin Authorization Middleware
 const authorizeAdmin = (req, res, next) => {
     if (req.user.role !== 'admin') {
@@ -85,14 +93,14 @@ const authorizeAdmin = (req, res, next) => {
 };
 
 // CRM-SERVICE ROUTES
-router.get('/', authenticateToken, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
-router.post('/', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body));
-router.put('/:id', authenticateToken, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body));
-router.delete('/:id', authenticateToken, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`));
+router.get('/', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
+router.post('/', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body));
+router.put('/:id', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body));
+router.delete('/:id', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`));
 
 // Authentication ROUTES
-router.post('/register', (req, res) => forwardToCRMService(req, res, 'POST', '/register', req.body));
-router.post('/login', (req, res) => forwardToCRMService(req, res, 'POST', '/login', req.body));
+router.post('/register', limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/register', req.body));
+router.post('/login', limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/login', req.body));
 
 
 module.exports = router;

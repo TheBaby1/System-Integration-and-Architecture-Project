@@ -2,6 +2,7 @@ const https = require('https');
 const express = require('express');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
 const JWT_SECRET = 'your_secret_key';
@@ -28,6 +29,14 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+
+// Rate limiter
+let limiter = rateLimit({
+    max: 5,
+    windowMs: 30 * 1000,
+    message: 'You have exceeded the maximum number of allowed requests. Please try again later.'
+});
+
 
 // Forward Request to Support-Service
 async function forwardToCRMService(req, res, method, endpoint, data = null) {
@@ -67,10 +76,10 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
 }
 
 // SUPPORT-SERVICE ROUTES
-router.get('/', authenticateToken, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
-router.get('/:customerId', authenticateToken, (req, res) => forwardToCRMService(req, res, 'GET', `/${req.params.customerId}`));
-router.post('/', authenticateToken, (req, res) => forwardToCRMService(req, res, 'POST', '/', { ...req.body, customerId: req.user.id }));
-router.put('/:ticketId', authenticateToken, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.ticketId}`, req.body));
-router.delete('/:ticketId', authenticateToken, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.ticketId}`));
+router.get('/', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
+router.get('/:customerId', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'GET', `/${req.params.customerId}`));
+router.post('/', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/', { ...req.body, customerId: req.user.id }));
+router.put('/:ticketId', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.ticketId}`, req.body));
+router.delete('/:ticketId', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.ticketId}`));
 
 module.exports = router;
