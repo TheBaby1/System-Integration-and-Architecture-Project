@@ -1,3 +1,4 @@
+const https = require('https');
 const express = require('express');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
@@ -5,6 +6,11 @@ const router = express.Router();
 
 const JWT_SECRET = 'your_secret_key';
 const crmServiceURL = 'https://localhost:3002/api/inventory';
+
+// To Ignore Self-Signed Certificates
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false,
+});
 
 // Token Authentication Middleware
 const authenticateToken = (req, res, next) => {
@@ -41,6 +47,7 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
             url: `${crmServiceURL}${endpoint}`,
             headers,
             data,
+            httpsAgent: httpsAgent,  
         };
 
         const response = await axios(options);

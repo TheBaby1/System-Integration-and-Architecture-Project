@@ -1,3 +1,4 @@
+const https = require('https');
 const express = require('express');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
@@ -5,6 +6,11 @@ const router = express.Router();
 
 const JWT_SECRET = 'your_secret_key';
 const crmServiceURL = 'https://localhost:3001/api/customers';  
+
+// To Ignore Self-Signed Certificates
+const httpsAgent = new https.Agent({
+    rejectUnauthorized: false,
+});
 
 // Forward request to CRM service
 async function forwardToCRMService(req, res, method, endpoint, data = null) {
@@ -22,12 +28,9 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
             url: `${crmServiceURL}${endpoint}`,
             headers: headers,
             data: data,
+            httpsAgent: httpsAgent,  
         };
-
-        console.log('Request URL:', options.url);
-        console.log('Headers:', options.headers);
-        console.log('Request Data:', options.data);
-
+        
 
         const response = await axios(options);
 
@@ -40,7 +43,7 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
                 message: error.response.data || 'Something went wrong on the CRM service',
             });
         } else if (error.request) {
-            console.error('CRM Service Error: No response received');
+            console.error('CRM Service Error: No response received', error);
             res.status(500).json({
                 error: 'CRM Service Error',
                 message: 'No response received from the CRM service',
