@@ -6,6 +6,7 @@ const router = express.Router();
 const JWT_SECRET = 'your_secret_key';
 const crmServiceURL = 'http://localhost:3001/api/customers';  
 
+// Forward request to CRM service
 async function forwardToCRMService(req, res, method, endpoint, data = null) {
     try {
         const token = req.headers['authorization']?.split(' ')[1];  
@@ -49,16 +50,7 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
     }
 }
 
-// Register route
-router.post('/register', async (req, res) => {
-    await forwardToCRMService(req, res, 'POST', '/register', req.body);
-});
-
-router.post('/login', async (req, res) => {
-    await forwardToCRMService(req, res, 'POST', '/login', req.body);
-});
-
-
+// Token Authentication Middleware
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];  
@@ -76,70 +68,23 @@ function authenticateToken(req, res, next) {
     });
 }
 
-router.get('/', authenticateToken, async (req, res) => {
-    if (req.user.role === 'admin') {
-        await forwardToCRMService(req, res, 'GET', '/');
-    } else {
-        await forwardToCRMService(req, res, 'GET', `/${req.user.id}`);
+// Admin Authorization Middleware
+const authorizeAdmin = (req, res, next) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied: Admins only' });
     }
-});
+    next();
+};
 
-// Update customer info
-router.put('/:id', authenticateToken, async (req, res) => {
-    const { id } = req.params;
+// CRM-SERVICE ROUTES
+router.get('/', (req, res) => forwardToCRMService(req, res, 'GET', '/'));
+router.post('/', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body));
+router.put('/:id', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body));
+router.delete('/:id', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`));
 
-    if (req.user.role === 'admin' || req.user.id === parseInt(id)) {
-        try {
-            await forwardToCRMService(req, res, 'PUT', `/${id}`, req.body);
-        } catch (error) {
-            res.status(500).json({
-                error: 'Failed to update customer',
-                message: error.message || 'An unexpected error occurred.',
-            });
-        }
-    } else {
-        return res.status(403).json({
-            message: 'Permission denied: You can only update your own account or if you are an admin.',
-        });
-    }
-});
-
-
-router.delete('/:id', authenticateToken, async (req, res) => {
-    const { id } = req.params;
-
-    if (req.user.id !== parseInt(id)) {
-        return res.status(403).json({
-            message: 'Permission denied: You can only delete your own account.',
-        });
-    }
-
-    if (req.user.role === 'admin') {
-        try {
-            await forwardToCRMService(req, res, 'DELETE', `/${id}`);
-        } catch (error) {
-            res.status(500).json({
-                error: 'Failed to delete customer',
-                message: error.message || 'An unexpected error occurred.',
-            });
-        }
-    } 
-    else if (req.user.id === parseInt(id)) {
-        try {
-            await forwardToCRMService(req, res, 'DELETE', `/${id}`);
-        } catch (error) {
-            res.status(500).json({
-                error: 'Failed to delete customer',
-                message: error.message || 'An unexpected error occurred.',
-            });
-        }
-    } else {
-        return res.status(403).json({
-            message: 'Permission denied: Only admins can delete users, or users can delete their own account.',
-        });
-    }
-});
-
+// Authentication ROUTES
+router.post('/register', (req, res) => forwardToCRMService(req, res, 'POST', '/register', req.body));
+router.post('/login', (req, res) => forwardToCRMService(req, res, 'POST', '/login', req.body));
 
 
 module.exports = router;

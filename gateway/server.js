@@ -6,8 +6,6 @@ const customerRoutes = require('./routes/customers');
 const ticketsRoutes = require('./routes/tickets');
 const inventoryRoutes = require('./routes/inventory');
 
-
-
 const app = express();
 
 app.use(cors());

@@ -6,6 +6,7 @@ const router = express.Router();
 const JWT_SECRET = 'your_secret_key';
 const crmServiceURL = 'http://localhost:3003/api/tickets';
 
+// Token Authentication Middleware
 const authenticateToken = (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) {
@@ -22,6 +23,7 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// Forward Request to Support-Service
 async function forwardToCRMService(req, res, method, endpoint, data = null) {
     try {
         const token = req.headers['authorization']?.split(' ')[1];  
@@ -57,9 +59,7 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
     }
 }
 
-
-
-// Routes
+// SUPPORT-SERVICE ROUTES
 router.get('/', authenticateToken, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
 router.get('/:customerId', authenticateToken, (req, res) => forwardToCRMService(req, res, 'GET', `/${req.params.customerId}`));
 router.post('/', authenticateToken, (req, res) => forwardToCRMService(req, res, 'POST', '/', { ...req.body, customerId: req.user.id }));

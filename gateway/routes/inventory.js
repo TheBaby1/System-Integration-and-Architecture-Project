@@ -6,7 +6,7 @@ const router = express.Router();
 const JWT_SECRET = 'your_secret_key';
 const crmServiceURL = 'http://localhost:3002/api/inventory';
 
-// Token authentication middleware
+// Token Authentication Middleware
 const authenticateToken = (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) return res.status(401).json({ error: 'No token provided' });
@@ -18,7 +18,7 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Admin authorization middleware
+// Admin Authorization Middleware
 const authorizeAdmin = (req, res, next) => {
     if (req.user.role !== 'admin') {
         return res.status(403).json({ error: 'Access denied: Admins only' });
@@ -26,7 +26,7 @@ const authorizeAdmin = (req, res, next) => {
     next();
 };
 
-// Forward request to CRM service
+// Forward request to Inventory Service
 async function forwardToCRMService(req, res, method, endpoint, data = null) {
     try {
         const token = req.headers['authorization']?.split(' ')[1];
@@ -48,7 +48,7 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
     } catch (error) {
         const status = error.response ? error.response.status : 500;
         const message = error.response ? error.response.data : 'Internal Server Error';
-        res.status(status).json({ error: 'CRM Service Error', message });
+        res.status(status).json({ error: 'Inventory Service Error', message });
     }
 }
 
