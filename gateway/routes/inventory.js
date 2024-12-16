@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 const JWT_SECRET = 'your_secret_key';
-const crmServiceURL = 'http://localhost:3002/api/inventory';
+const crmServiceURL = 'https://localhost:3002/api/inventory';
 
 // Token Authentication Middleware
 const authenticateToken = (req, res, next) => {

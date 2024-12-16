@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 const JWT_SECRET = 'your_secret_key';
-const crmServiceURL = 'http://localhost:3001/api/customers';  
+const crmServiceURL = 'https://localhost:3001/api/customers';  
 
 // Forward request to CRM service
 async function forwardToCRMService(req, res, method, endpoint, data = null) {
@@ -23,6 +23,11 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
             headers: headers,
             data: data,
         };
+
+        console.log('Request URL:', options.url);
+        console.log('Headers:', options.headers);
+        console.log('Request Data:', options.data);
+
 
         const response = await axios(options);
 
@@ -77,7 +82,7 @@ const authorizeAdmin = (req, res, next) => {
 };
 
 // CRM-SERVICE ROUTES
-router.get('/', (req, res) => forwardToCRMService(req, res, 'GET', '/'));
+router.get('/', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
 router.post('/', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body));
 router.put('/:id', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body));
 router.delete('/:id', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`));

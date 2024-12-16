@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 const JWT_SECRET = 'your_secret_key';
-const crmServiceURL = 'http://localhost:3003/api/tickets';
+const crmServiceURL = 'https://localhost:3003/api/tickets';
 
 // Token Authentication Middleware
 const authenticateToken = (req, res, next) => {
