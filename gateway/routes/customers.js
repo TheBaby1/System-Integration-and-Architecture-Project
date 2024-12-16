@@ -85,10 +85,10 @@ const authorizeAdmin = (req, res, next) => {
 };
 
 // CRM-SERVICE ROUTES
-router.get('/', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
+router.get('/', authenticateToken, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
 router.post('/', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body));
-router.put('/:id', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body));
-router.delete('/:id', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`));
+router.put('/:id', authenticateToken, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body));
+router.delete('/:id', authenticateToken, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`));
 
 // Authentication ROUTES
 router.post('/register', (req, res) => forwardToCRMService(req, res, 'POST', '/register', req.body));

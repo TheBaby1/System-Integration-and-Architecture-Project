@@ -9,6 +9,19 @@ router.get('/', (req, res) => {
     res.status(200).json(products);
 });
 
+// Fetch product by ID
+router.get('/:productId', (req, res) => {
+    const { productId } = req.params;
+    const product = products.find(p => p.id === parseInt(productId)); 
+
+    if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json(product);
+});
+
+
 // Create new product (admin only)
 router.post('/', (req, res) => {
     const { name, price, quantity } = req.body;

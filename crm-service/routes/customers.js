@@ -108,68 +108,106 @@ router.post('/login', async (req, res) => {
 
 // CRUD Routes for customers
 router.get('/', (req, res) => {
-    try {
-        res.status(200).json(customers);
-    } catch (error) {
-        console.error('Error fetching customers:', error);
-        res.status(500).json({
-            error: true,
-            message: 'An error occurred while fetching customers.',
-        });
-    }
-});
+    const { 'user-role': role, 'user-id': userId } = req.headers;
 
-router.get('/:id', (req, res) => {
-    try {
-        const customer = customers.find(c => c.id === parseInt(req.params.id));
+    if (!role || !userId) {
+        return res.status(400).json({ error: 'Role or User ID is missing in the request headers.' });
+    }
+
+    if (role === 'admin') {
+        try {
+            res.status(200).json(customers);
+        } catch (error) {
+            console.error('Error fetching customers:', error);
+            res.status(500).json({
+                error: true,
+                message: 'An error occurred while fetching customers.',
+            });
+        }
+    } else {
+        const customer = customers.find(c => c.id === parseInt(userId));
+        
         if (!customer) {
             return res.status(404).json({
                 error: true,
                 message: 'Customer not found.',
             });
         }
+
         res.status(200).json(customer);
-    } catch (error) {
-        console.error('Error fetching customer:', error);
-        res.status(500).json({
-            error: true,
-            message: 'An error occurred while fetching the customer.',
-        });
     }
 });
+
+
+
+// router.get('/:id', (req, res) => {
+//     try {
+//         const customer = customers.find(c => c.id === parseInt(req.params.id));
+//         if (!customer) {
+//             return res.status(404).json({
+//                 error: true,
+//                 message: 'Customer not found.',
+//             });
+//         }
+//         res.status(200).json(customer);
+//     } catch (error) {
+//         console.error('Error fetching customer:', error);
+//         res.status(500).json({
+//             error: true,
+//             message: 'An error occurred while fetching the customer.',
+//         });
+//     }
+// });
 
 router.put('/:id', (req, res) => {
-    try {
-        const customer = customers.find(c => c.id === parseInt(req.params.id));
-        if (!customer) {
-            return res.status(404).json({
-                error: true,
-                message: 'Customer not found.',
-            });
-        }
+    const { 'user-role': role, 'user-id': userId } = req.headers;
+    const { id } = req.params;  
 
-        const { name, email, password } = req.body;
-        if (name) customer.name = name;
-        if (email) customer.email = email;
-        if (password) customer.password = bcrypt.hashSync(password, 10);
 
-        res.status(200).json({
-            success: true,
-            message: 'Customer successfully updated.',
-            customer,
-        });
-    } catch (error) {
-        console.error('Error updating customer:', error);
-        res.status(500).json({
+    if (!role || !userId) {
+        return res.status(400).json({ error: 'Role or User ID is missing in the request headers.' });
+    }
+
+
+    const customer = customers.find(c => c.id === parseInt(id));
+    if (!customer) {
+        return res.status(404).json({
             error: true,
-            message: 'An error occurred while updating the customer.',
+            message: 'Customer not found.',
         });
     }
+
+    if (role !== 'admin' && parseInt(userId) !== customer.id) {
+        return res.status(403).json({ error: 'Access denied. You can only update your own information.' });
+    }
+
+    const { name, email, password } = req.body;
+    if (name) customer.name = name;
+    if (email) customer.email = email;
+    if (password) customer.password = bcrypt.hashSync(password, 10);
+
+    res.status(200).json({
+        success: true,
+        message: 'Customer successfully updated.',
+        customer,
+    });
 });
 
+
 router.delete('/:id', (req, res) => {
+    const { 'user-role': role, 'user-id': userId } = req.headers;
+    const customerId = req.params.id;
+
+    if (!role || !userId) {
+        return res.status(400).json({ error: 'Role or User ID is missing in the request headers.' });
+    }
+
+    if (role !== 'admin' && userId !== customerId) {
+        return res.status(403).json({ error: 'Access denied: You can only delete your own data or be an admin.' });
+    }
+
     try {
-        const customerIndex = customers.findIndex(c => c.id === parseInt(req.params.id));
+        const customerIndex = customers.findIndex(c => c.id === parseInt(customerId));
         if (customerIndex === -1) {
             return res.status(404).json({
                 error: true,
@@ -190,5 +228,6 @@ router.delete('/:id', (req, res) => {
         });
     }
 });
+
 
 module.exports = router;

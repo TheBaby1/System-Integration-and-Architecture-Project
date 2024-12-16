@@ -11,8 +11,8 @@ app.use(express.json());
 
 // Read Server Certificate Key
 const options = {
-    key: fs.readFileSync('D:/IT 3103 Final Project/certs/server.key'),
-    cert: fs.readFileSync('D:/IT 3103 Final Project/certs/server.crt'),
+    key: fs.readFileSync('../certs/server.key'),
+    cert: fs.readFileSync('../certs/server.crt'),
 };
 
 // Use the customer routes as middleware under '/api/customers'

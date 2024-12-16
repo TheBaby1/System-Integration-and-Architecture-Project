@@ -61,6 +61,7 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
 
 // Routes
 router.get('/', (req, res) => forwardToCRMService(req, res, 'GET', '/'));
+router.get('/:productId', (req, res) => forwardToCRMService(req, res, 'GET', `/${req.params.productId}`));
 router.post('/', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body));
 router.put('/:id', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body));
 router.delete('/:id', authenticateToken, authorizeAdmin, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`));
