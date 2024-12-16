@@ -7,6 +7,7 @@ const axios = require('axios');
 const customerRoutes = require('./routes/customers'); 
 const ticketsRoutes = require('./routes/tickets');
 const inventoryRoutes = require('./routes/inventory');
+const orderRoutes = require('./routes/orders');
 
 const app = express();
 
@@ -22,6 +23,7 @@ const options = {
 app.use('/api/customers', customerRoutes);
 app.use('/api/tickets', ticketsRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Creating an HTTPS Server
 https.createServer(options, app).listen(3000, () => {
