@@ -30,6 +30,14 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// Admin Authorization Middleware
+const authorizeAdmin = (req, res, next) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied: Admins only' });
+    }
+    next();
+};
+
 // Rate limiter
 let limiter = rateLimit({
     max: 5,
@@ -76,10 +84,10 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
 }
 
 // SUPPORT-SERVICE ROUTES
-router.get('/', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
-router.get('/:customerId', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'GET', `/${req.params.customerId}`));
-router.post('/', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/', { ...req.body, customerId: req.user.id }));
-router.put('/:ticketId', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.ticketId}`, req.body));
-router.delete('/:ticketId', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.ticketId}`));
+router.get('/', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'GET', '/')); // Route To Get All Tickets
+router.get('/:customerId', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'GET', `/${req.params.customerId}`)); // Route To Get Ticket by ID
+router.post('/', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/', { ...req.body, customerId: req.user.id })); // Route To Create Ticket
+router.put('/:ticketId', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.ticketId}`, req.body)); // Route To Update Tickets
+router.delete('/:ticketId', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.ticketId}`)); // Route To Delete Ticket
 
 module.exports = router;

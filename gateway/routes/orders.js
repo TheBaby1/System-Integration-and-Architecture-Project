@@ -30,6 +30,14 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// Admin Authorization Middleware
+const authorizeAdmin = (req, res, next) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied: Admins only' });
+    }
+    next();
+};
+
 // Rate limiter
 let limiter = rateLimit({
     max: 5,
@@ -74,10 +82,10 @@ async function forwardToOrderService(req, res, method, endpoint, data = null) {
 }
 
 // Routes
-router.get('/', authenticateToken, limiter, (req, res) => forwardToOrderService(req, res, 'GET', '/'));
-router.get('/:customerId', authenticateToken, limiter, (req, res) => forwardToOrderService(req, res, 'GET', `/${req.params.customerId}`));
-router.post('/', authenticateToken, limiter, (req, res) => forwardToOrderService(req, res, 'POST', '/', req.body));
-router.put('/:orderId', authenticateToken, limiter, (req, res) => forwardToOrderService(req, res, 'PUT', `/${req.params.orderId}`, req.body));
-router.delete('/:orderId',authenticateToken, limiter,(req, res) => forwardToOrderService(req, res, 'DELETE', `/${req.params.orderId}`));
+router.get('/', authenticateToken, limiter, (req, res) => forwardToOrderService(req, res, 'GET', '/')); // Route To Get All Orders
+router.get('/:customerId', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToOrderService(req, res, 'GET', `/${req.params.customerId}`)); // Route To Get Order by Customer ID
+router.post('/', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToOrderService(req, res, 'POST', '/', req.body)); // Route To Create Order
+router.put('/:orderId', authenticateToken, limiter, (req, res) => forwardToOrderService(req, res, 'PUT', `/${req.params.orderId}`, req.body)); // Route To Update Order
+router.delete('/:orderId',authenticateToken, limiter,(req, res) => forwardToOrderService(req, res, 'DELETE', `/${req.params.orderId}`)); // Route To Delete Order
 
 module.exports = router;

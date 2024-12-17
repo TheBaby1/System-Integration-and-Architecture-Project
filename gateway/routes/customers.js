@@ -93,14 +93,14 @@ const authorizeAdmin = (req, res, next) => {
 };
 
 // CRM-SERVICE ROUTES
-router.get('/', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
-router.post('/', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body));
-router.put('/:id', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body));
-router.delete('/:id', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`));
+router.get('/', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'GET', '/')); // Route To Get All Users
+router.post('/', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body)); // Route To Create Users
+router.put('/:id', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body)); // Route To Update Users
+router.delete('/:id', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`)); // Route To Delete Users
 
 // Authentication ROUTES
-router.post('/register', limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/register', req.body));
-router.post('/login', limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/login', req.body));
+router.post('/register', limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/register', req.body)); // Route For User Registration
+router.post('/login', limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/login', req.body)); // Route For User and Admin Login
 
 
 module.exports = router;

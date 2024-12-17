@@ -68,10 +68,10 @@ async function forwardToCRMService(req, res, method, endpoint, data = null) {
 }
 
 // Routes
-router.get('/', limiter, (req, res) => forwardToCRMService(req, res, 'GET', '/'));
-router.get('/:productId', limiter, (req, res) => forwardToCRMService(req, res, 'GET', `/${req.params.productId}`));
-router.post('/', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body));
-router.put('/:id', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body));
-router.delete('/:id', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`));
+router.get('/', authenticateToken, limiter, (req, res) => forwardToCRMService(req, res, 'GET', '/')); // Route To Get All Products
+router.get('/:productId', limiter, (req, res) => forwardToCRMService(req, res, 'GET', `/${req.params.productId}`)); // Route To Get Product by ID
+router.post('/', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'POST', '/', req.body)); // Route To Create Product
+router.put('/:id', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'PUT', `/${req.params.id}`, req.body)); // Route To Update Product
+router.delete('/:id', authenticateToken, authorizeAdmin, limiter, (req, res) => forwardToCRMService(req, res, 'DELETE', `/${req.params.id}`)); // Route To Delete Product
 
 module.exports = router;

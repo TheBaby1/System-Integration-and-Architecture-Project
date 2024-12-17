@@ -7,10 +7,10 @@ const inventoryServiceURL = 'https://localhost:3002/api/inventory'; // Inventory
 let orders = [];
 let nextOrderId = 1;
 
-// To Ignore Self-Signed Certificates
-const httpsAgent = new require('https').Agent({
-    rejectUnauthorized: false,
-});
+// // To Ignore Self-Signed Certificates
+// const httpsAgent = new require('https').Agent({
+//     rejectUnauthorized: false,
+// });
 
 // Fetch all orders or a customer's orders
 router.get('/', (req, res) => {
@@ -38,6 +38,7 @@ router.get('/', (req, res) => {
     return res.status(200).json({ message: 'User orders fetched', orders: userOrders });
 });
 
+// Route To Fetch Orders by Customer ID
 router.get('/:customerId', (req, res) => {
     const { 'user-role': role, 'user-id': userId } = req.headers;
     const { customerId } = req.params;
@@ -61,7 +62,7 @@ router.get('/:customerId', (req, res) => {
     return res.status(403).json({ error: 'Access denied. Only admin can fetch customer orders by users ID.' });
 });
 
-
+// Route to Create Order 
 router.post('/', async (req, res) => {
     const { 'user-role': role, 'user-id': userId } = req.headers;
     const { productId, quantity } = req.body;
@@ -119,8 +120,7 @@ router.post('/', async (req, res) => {
 });
 
 
-
-// Update 
+// Route to Update Order (Status or Details)
 router.put('/:orderId', (req, res) => {
     const { 'user-role': role, 'user-id': userId } = req.headers;
     const { orderId } = req.params;
@@ -157,7 +157,7 @@ router.put('/:orderId', (req, res) => {
 
 
 
-// Delete an order
+// Route to Delete an Order by ID
 router.delete('/:orderId', (req, res) => {
     const { 'user-role': role, 'user-id': userId } = req.headers;
     const orderId = parseInt(req.params.orderId, 10);
@@ -185,7 +185,6 @@ router.delete('/:orderId', (req, res) => {
 
     return res.status(403).json({ error: 'You can only delete your own orders. Admins are not allowed to delete orders.' });
 });
-
 
 
 module.exports = router;
