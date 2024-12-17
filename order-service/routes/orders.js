@@ -7,10 +7,10 @@ const inventoryServiceURL = 'https://localhost:3002/api/inventory'; // Inventory
 let orders = [];
 let nextOrderId = 1;
 
-// // To Ignore Self-Signed Certificates
-// const httpsAgent = new require('https').Agent({
-//     rejectUnauthorized: false,
-// });
+// To Ignore Self-Signed Certificates
+const httpsAgent = new require('https').Agent({
+    rejectUnauthorized: false,
+});
 
 // Fetch all orders or a customer's orders
 router.get('/', (req, res) => {
