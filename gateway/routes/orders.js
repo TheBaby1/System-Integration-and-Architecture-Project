@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const router = express.Router();
 
-const JWT_SECRET = 'your_secret_key';
+const JWT_SECRET = 'your_secret_key'; // Same secret used by the gateway to sign tokens
 const orderServiceURL = 'https://localhost:3004/api/orders'; // Order service URL
 
 // To Ignore Self-Signed Certificates
@@ -13,7 +13,7 @@ const httpsAgent = new https.Agent({
     rejectUnauthorized: false,
 });
 
-// Token Authentication Middleware
+// Function to decode token and extract user info
 const authenticateToken = (req, res, next) => {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) {
@@ -24,6 +24,7 @@ const authenticateToken = (req, res, next) => {
         if (err) {
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
+
         req.user = decoded;
         next();
     });
@@ -36,11 +37,16 @@ let limiter = rateLimit({
     message: 'You have exceeded the maximum number of allowed requests. Please try again later.',
 });
 
-// Forward request to Order Service
 async function forwardToOrderService(req, res, method, endpoint, data = null) {
     try {
         const token = req.headers['authorization']?.split(' ')[1];
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const headers = token ? {
+            Authorization: `Bearer ${token}`,
+            'user-id': req.user?.id,     
+            'user-role': req.user?.role,  
+        } : {};
+
+        console.log('Forwarded Header: ', headers);
 
         const options = {
             method,
@@ -53,16 +59,25 @@ async function forwardToOrderService(req, res, method, endpoint, data = null) {
         const response = await axios(options);
         res.status(response.status).json(response.data);
     } catch (error) {
-        const status = error.response ? error.response.status : 500;
-        const message = error.response ? error.response.data : 'Internal Server Error';
-        res.status(status).json({ error: 'Order Service Error', message });
+        if (error.response){
+            res.status(error.response.status).json({
+                error: 'Order Service Error',
+                message: error.response.data,
+            });
+        } else {
+            res.status(500).json({
+                error: 'Internal Server Error',
+                message: 'An error occured while processing your request.',
+            })
+        }
     }
 }
 
 // Routes
-router.get('/', limiter, (req, res) => forwardToOrderService(req, res, 'GET', '/'));
+router.get('/', authenticateToken, limiter, (req, res) => forwardToOrderService(req, res, 'GET', '/'));
+router.get('/:customerId', authenticateToken, limiter, (req, res) => forwardToOrderService(req, res, 'GET', `/${req.params.customerId}`));
 router.post('/', authenticateToken, limiter, (req, res) => forwardToOrderService(req, res, 'POST', '/', req.body));
 router.put('/:orderId', authenticateToken, limiter, (req, res) => forwardToOrderService(req, res, 'PUT', `/${req.params.orderId}`, req.body));
-router.delete('/:orderId', authenticateToken, limiter, (req, res) => forwardToOrderService(req, res, 'DELETE', `/${req.params.orderId}`));
+router.delete('/:orderId',authenticateToken, limiter,(req, res) => forwardToOrderService(req, res, 'DELETE', `/${req.params.orderId}`));
 
 module.exports = router;
