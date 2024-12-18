@@ -122,16 +122,18 @@ router.post('/', async (req, res) => {
 
 // Route to Update Order (Status or Details)
 router.put('/:orderId', (req, res) => {
-    const { 'user-role': role, 'user-id': userId } = req.headers;
+    const { 'user-role': role, 'user-id': userId } = req.headers;  
     const { orderId } = req.params;
     const { status, quantity } = req.body;
+
+    // console.log(Received headers: role = ${role}, userId = ${userId});  
+    // console.log(Order ID: ${orderId}, Status: ${status}, Quantity: ${quantity}); 
 
     if (!role || !userId) {
         return res.status(400).json({ error: 'Role and User ID are required.' });
     }
 
-    // Only validate status if it's provided in the request body
-    if (status && status !== 'pending' && status !== 'processing' && status !== 'completed') {
+    if (status && !['pending', 'processing', 'completed'].includes(status)) {
         return res.status(400).json({ message: 'Invalid Status!' });
     }
 
@@ -141,19 +143,31 @@ router.put('/:orderId', (req, res) => {
         return res.status(404).json({ message: 'Order not found.' });
     }
 
-    if (order.status !== 'pending') {
-        return res.status(400).json({ error: 'You can only edit the order if its status is pending.' });
+    // console.log(Order Details:, order);
+
+    if (role === 'customer') {
+        if (parseInt(order.customerId, 10) !== parseInt(userId, 10)) {
+            // console.log(Access denied: userId ${userId} is not the owner of order ${orderId});  
+            return res.status(403).json({ error: 'You can only edit your own orders.' });
+        }
+
+        if (order.status !== 'pending') {
+            return res.status(400).json({ error: 'You can only edit the order if its status is pending.' });
+        }
+
+        if (quantity !== undefined) {
+            order.quantity = quantity;
+        }
+        if (status) {
+            order.status = status;
+        }
+
+        return res.status(200).json({ message: 'Order updated successfully', order });
     }
 
     if (role === 'admin') {
         if (status) order.status = status; 
-        if (quantity) order.quantity = quantity;  
-        return res.status(200).json({ message: 'Order updated successfully', order });
-    }
-
-    if (role === 'customer' && order.customerId === parseInt(userId, 10)) {
-        if (status) order.status = status;  
-        if (quantity) order.quantity = quantity;  
+        if (quantity !== undefined) order.quantity = quantity; 
         return res.status(200).json({ message: 'Order updated successfully', order });
     }
 
@@ -164,32 +178,49 @@ router.put('/:orderId', (req, res) => {
 
 // Route to Delete an Order by ID
 router.delete('/:orderId', (req, res) => {
-    const { 'user-role': role, 'user-id': userId } = req.headers;
-    const orderId = parseInt(req.params.orderId, 10);
+    const { 'user-role': role, 'user-id': userId } = req.headers;  
+    const { orderId } = req.params;  
+
+    // console.log(Received headers: role = ${role}, userId = ${userId});  
+    // console.log(Order ID: ${orderId});
 
     if (!role || !userId) {
-        return res.status(400).json({ error: 'Role or User ID is missing in the request headers.' });
+        return res.status(400).json({ error: 'Role and User ID are required.' });
     }
 
-    const orderIndex = orders.findIndex(o => o.id === orderId);
+    const order = orders.find(o => o.id === parseInt(orderId));
 
-    if (orderIndex === -1) {
+    if (!order) {
         return res.status(404).json({ message: 'Order not found.' });
     }
 
-    const order = orders[orderIndex];
+    // console.log(Order Details:, order);
 
-    if (order.status !== 'pending') {
-        return res.status(400).json({ error: 'Order cannot be deleted because its status is not pending.' });
+    if (role === 'admin') {
+        if (order.status === 'pending') {
+            return res.status(400).json({ error: 'Admins cannot delete orders with a pending status.' });
+        }
+        if (order.status === 'completed') {
+            orders.splice(orders.indexOf(order), 1); 
+            return res.status(200).json({ message: 'Order deleted successfully by admin.' });
+        }
     }
 
-    if (role === 'customer' && order.customerId === parseInt(userId, 10)) {
-        orders.splice(orderIndex, 1);  
-        return res.status(200).json({ message: 'Order deleted successfully' });
+    if (role === 'customer') {
+        if (parseInt(order.customerId, 10) !== parseInt(userId, 10)) {
+            // console.log(Access denied: userId ${userId} is not the owner of order ${orderId});  
+            return res.status(403).json({ error: 'You can only delete your own orders.' });
+        }
+
+        if (order.status !== 'pending') {
+            return res.status(400).json({ error: 'Order cannot be deleted because its status is not pending.' });
+        }
+
+        orders.splice(orders.indexOf(order), 1);  
+        return res.status(200).json({ message: 'Order deleted successfully by customer.' });
     }
 
-    return res.status(403).json({ error: 'You can only delete your own orders. Admins are not allowed to delete orders.' });
+    return res.status(403).json({ error: 'You can only delete your own orders or if you are an admin and the order is completed.' });
 });
-
 
 module.exports = router;

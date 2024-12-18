@@ -23,6 +23,7 @@ The integrated platform facilitates seamless communication and data sharing betw
 - **CRM Service**: Manages customer information, including account creation, updates, and deletions.  
 - **Inventory Service**: Tracks product inventory and availability.  
 - **Support Service**: Handles customer support tickets and related operations.  
+- **Order Service**: Handles customer orders and related operations.  
 
 Each service operates as an independent microservice, and the API Gateway handles request routing, security, and traffic management.  
 
@@ -91,4 +92,40 @@ cd crm-service
 npm init -y
 npm install express cors
 npm install bcrypt
+npm install jsonwebtoken
+npm install axios
+npm install express-rate-limit
+```
+
+### **Inventory-Service**
+```bash
+cd inventory-service
+npm init -y
+npm install express cors
+npm install bcrypt
+npm install jsonwebtoken
+npm install axios
+npm install express-rate-limit
+```
+
+### **Support-Service**
+```bash
+cd support-service
+npm init -y
+npm install express cors
+npm install bcrypt
+npm install jsonwebtoken
+npm install axios
+npm install express-rate-limit
+```
+
+### **Order-Service**
+```bash
+cd order-service
+npm init -y
+npm install express cors
+npm install bcrypt
+npm install jsonwebtoken
+npm install axios
+npm install express-rate-limit
 ```
