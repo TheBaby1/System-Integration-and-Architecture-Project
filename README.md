@@ -30,8 +30,8 @@ Each service operates as an independent microservice, and the API Gateway handle
 ---
 
 ## **System Architecture**
-![System Architecture Diagram](#)  
-*(Insert an architectural diagram showing how services interact via the API Gateway)*  
+
+ 
 
 ### **Key Features**
 - Decoupled microservices for modularity and scalability.  
@@ -61,6 +61,10 @@ Each service operates as an independent microservice, and the API Gateway handle
   - Create, view, and manage support tickets.  
   - Assign tickets to specific customers.  
 
+### **Order Service**
+- **Purpose**: Handle customer orders.  
+- **Key Features**:  
+  - Create, view, and manage customer orders.    
 ---
 
 ## **API Gateway**
@@ -74,6 +78,7 @@ Each service operates as an independent microservice, and the API Gateway handle
 - `/api/customers` (CRUD operations on customers via CRM Service)  
 - `/api/inventory` (CRUD operations on products via Inventory Service)  
 - `/api/tickets` (CRUD operations on tickets via Support Service)  
+- `/api/orders` (CRUD operations on orders via Order Service)  
 
 ---
 
@@ -122,6 +127,17 @@ npm install express-rate-limit
 ### **Order-Service**
 ```bash
 cd order-service
+npm init -y
+npm install express cors
+npm install bcrypt
+npm install jsonwebtoken
+npm install axios
+npm install express-rate-limit
+```
+
+### **Gateway**
+```bash
+cd gateway
 npm init -y
 npm install express cors
 npm install bcrypt
