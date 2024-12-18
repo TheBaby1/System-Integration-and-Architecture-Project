@@ -23,11 +23,19 @@ router.post('/', (req, res) => {
         return res.status(403).json({ error: 'You can only create tickets for your own account.' });
     }
 
+    const allowedStatuses = ['open', 'processing', 'resolved'];
+
+    const newStatus = 'processing';
+
+    if (!allowedStatuses.includes(newStatus)) {
+        return res.status(400).json({ message: `Invalid status. Allowed statuses are: ${allowedStatuses.join(', ')}` });
+    }
+
     const newTicket = {
         id: ticketIdCounter++,  
         customerId,
         issue,
-        status: 'open',
+        status: newStatus,
     };
 
     tickets.push(newTicket);
@@ -85,6 +93,10 @@ router.put('/:ticketId', (req, res) => {
 
     if (!role || !status) {
         return res.status(400).json({ error: 'Role and status are required.' });
+    }
+
+    if (status !== 'open' && status != 'processing' && status != 'resolved') {
+        return res.status(400).json({ message: 'Invalid Status!'});
     }
 
     const ticket = tickets.find(t => t.id === ticketId);
