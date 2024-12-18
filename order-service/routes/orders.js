@@ -130,8 +130,9 @@ router.put('/:orderId', (req, res) => {
         return res.status(400).json({ error: 'Role and User ID are required.' });
     }
 
-    if (status !== 'pending' && status != 'processing' && status != 'completed') {
-        return res.status(400).json({ message: 'Invalid Status!'});
+    // Only validate status if it's provided in the request body
+    if (status && status !== 'pending' && status !== 'processing' && status !== 'completed') {
+        return res.status(400).json({ message: 'Invalid Status!' });
     }
 
     const order = orders.find(o => o.id === parseInt(orderId));
