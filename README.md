@@ -100,6 +100,7 @@ npm install bcrypt
 npm install jsonwebtoken
 npm install axios
 npm install express-rate-limit
+npm start
 ```
 
 ### **Inventory-Service**
@@ -111,6 +112,7 @@ npm install bcrypt
 npm install jsonwebtoken
 npm install axios
 npm install express-rate-limit
+npm start
 ```
 
 ### **Support-Service**
@@ -122,6 +124,7 @@ npm install bcrypt
 npm install jsonwebtoken
 npm install axios
 npm install express-rate-limit
+npm start
 ```
 
 ### **Order-Service**
@@ -133,6 +136,7 @@ npm install bcrypt
 npm install jsonwebtoken
 npm install axios
 npm install express-rate-limit
+npm start
 ```
 
 ### **Gateway**
@@ -144,4 +148,5 @@ npm install bcrypt
 npm install jsonwebtoken
 npm install axios
 npm install express-rate-limit
+npm start
 ```
